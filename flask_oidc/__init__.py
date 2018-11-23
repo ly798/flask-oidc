@@ -499,7 +499,7 @@ class OpenIDConnect(object):
        Use :func:`require_login` instead.
     """
 
-    def require_keycloak_role(self, client, role):
+    def require_keycloak_role(self, roles):
         """
         Function to check for a KeyCloak client role in JWT access token.
 
@@ -512,10 +512,18 @@ class OpenIDConnect(object):
         def wrapper(view_func):
             @wraps(view_func)
             def decorated(*args, **kwargs):
-                pre, tkn, post = self.get_access_token().split('.')
+                try:
+                    pre, tkn, post = self.get_access_token().split('.')
+                except Exception:
+                    self.logout()
+                    return abort(403)
+                missing_padding = 4 - len(tkn) % 4
+                if missing_padding:
+                    tkn += '=' * missing_padding
                 access_token = json.loads(b64decode(tkn))
-                if role in access_token['resource_access'][client]['roles']:
-                    return view_func(*args, **kwargs)
+                for role in roles:
+                    if role in access_token['realm_access']['roles']:
+                        return view_func(*args, **kwargs)
                 else:
                     return abort(403)
             return decorated
