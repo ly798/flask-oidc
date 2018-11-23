@@ -187,6 +187,14 @@ class OpenIDConnect(object):
         except KeyError:
             pass
 
+        # add keycloak logout
+        app.add_url_rule('/k_logout', 'k_logout', self.k_logout)
+
+    def k_logout(self):
+        """
+        keycloak logout
+        """
+
     def load_secrets(self, app):
         # Load client_secrets.json to pre-initialize some configuration
         content = app.config['OIDC_CLIENT_SECRETS']
@@ -772,6 +780,13 @@ class OpenIDConnect(object):
         """
         # TODO: Add single logout
         self._set_cookie_id_token(None)
+        return self.request_keycloak_logout()
+
+    def request_keycloak_logout(self, redirect_url=None):
+        # params = {'redirect_uri': 'http://192.168.110.41:5001'}
+        params = {'redirect_uri': redirect_url}
+        logout_url = 'http://192.168.110.45:8180/auth/realms/python-test/protocol/openid-connect/logout?%s' % urlencode(params)
+        return redirect(logout_url)
 
     # Below here is for resource servers to validate tokens
     def validate_token(self, token, scopes_required=None):
